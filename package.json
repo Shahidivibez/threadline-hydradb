@@ -1,0 +1,12 @@
+{
+  "name": "threadline-context-router",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A graph-powered agent context router built on HydraDB OSS",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
