@@ -1,0 +1,83 @@
+services:
+  # Public demo service running the actual HydraDB OSS graph-node.
+  # Render Free uses an ephemeral filesystem: the small demo graph is re-seeded
+  # by Threadline after the database service restarts or spins down.
+  - type: web
+    name: threadline-hydradb
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile.hydradb
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: GRAPH_HTTP_ADDR
+        value: 0.0.0.0:10000
+      - key: GRAPH_ALLOW_PLAINTEXT
+        value: "true"
+      - key: CLOUD_PROVIDER
+        value: local
+      - key: LOCAL_PATH
+        value: /tmp/hydradb/store
+      - key: GRAPH_DATA_CACHE_DIR
+        value: /tmp/hydradb/cache
+      - key: GRAPH_NAMESPACE
+        value: default
+      - key: GRAPH_ID
+        value: default
+      - key: GRAPH_CELL_ID
+        value: cell-0
+      - key: GRAPH_CELLS
+        value: cell-0
+      - key: GRAPH_NODE_ID
+        value: graph-node-0
+      - key: GRAPH_ADVERTISED_BOLT_ADDR
+        value: localhost:7687
+      - key: GRAPH_BOLT_NODE_ADDRESSES
+        value: graph-node-0=localhost:7687
+      - key: GRAPH_AUTH_TOKEN_FILE
+        value: /tmp/hydradb-auth-token
+      - key: GRAPH_AUTH_TOKEN
+        generateValue: true
+      - key: GRAPH_DATA_CACHE_BYTES
+        value: "67108864"
+      - key: GRAPH_DATA_CACHE_PART_BYTES
+        value: "8388608"
+      - key: GRAPH_SLATE_DB_CACHE_BYTES
+        value: "67108864"
+      - key: GRAPH_MAX_GRAPHBLAS_BYTES
+        value: "33554432"
+      - key: RUST_MIN_STACK
+        value: "33554432"
+      - key: GRAPH_USAGE_REPORT_ENABLED
+        value: "false"
+
+  # Threadline app. HYDRADB_URL and HYDRADB_TOKEN are wired from the
+  # HydraDB service so no database credential is stored in this repository.
+  - type: web
+    name: threadline-app
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /api/status
+    envVars:
+      - key: HYDRADB_URL
+        fromService:
+          type: web
+          name: threadline-hydradb
+          property: host
+      - key: HYDRADB_TOKEN
+        fromService:
+          type: web
+          name: threadline-hydradb
+          envVarKey: GRAPH_AUTH_TOKEN
+      - key: HYDRADB_GRAPH
+        value: default
+      - key: HYDRADB_CELL
+        value: cell-0
+      - key: HYDRADB_NAMESPACE
+        value: default
